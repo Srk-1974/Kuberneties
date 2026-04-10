@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes GUI Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .status-running { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .status-pending { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        .status-failed { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .log-container { 
+            background: #1a1a1a; 
+            color: #00ff00; 
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="container" class="w-8 h-8 text-blue-400"></i>
+                    <h1 class="text-2xl font-bold text-white">Kubernetes GUI Manager</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="cluster-status" class="px-3 py-1 rounded-full text-sm font-medium bg-green-500 text-white">
+                        Connected
+                    </span>
+                    <button onclick="refreshAll()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center space-x-2 transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-1 mb-6 bg-gray-800 p-1 rounded-lg">
+            <button onclick="switchTab('pods')" id="pods-tab" class="tab-btn flex-1 px-4 py-2 rounded-md text-sm font-medium transition bg-blue-600 text-white">
+                <i data-lucide="box" class="w-4 h-4 inline mr-2"></i>Pods
+            </button>
+            <button onclick="switchTab('deployments')" id="deployments-tab" class="tab-btn flex-1 px-4 py-2 rounded-md text-sm font-medium transition text-gray-300 hover:bg-gray-700">
+                <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>Deployments
+            </button>
+            <button onclick="switchTab('services')" id="services-tab" class="tab-btn flex-1 px-4 py-2 rounded-md text-sm font-medium transition text-gray-300 hover:bg-gray-700">
+                <i data-lucide="network" class="w-4 h-4 inline mr-2"></i>Services
+            </button>
+            <button onclick="switchTab('logs')" id="logs-tab" class="tab-btn flex-1 px-4 py-2 rounded-md text-sm font-medium transition text-gray-300 hover:bg-gray-700">
+                <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>Logs
+            </button>
+            <button onclick="switchTab('monitoring')" id="monitoring-tab" class="tab-btn flex-1 px-4 py-2 rounded-md text-sm font-medium transition text-gray-300 hover:bg-gray-700">
+                <i data-lucide="activity" class="w-4 h-4 inline mr-2"></i>Monitor
+            </button>
+        </div>
+
+        <!-- Pods Section -->
+        <div id="pods-content" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="box" class="w-5 h-5 mr-2 text-blue-400"></i>
+                        Pods Management
+                    </h2>
+                    <div class="flex space-x-2">
+                        <select id="namespace-select" class="bg-gray-700 text-white px-3 py-2 rounded-lg">
+                            <option value="all">All Namespaces</option>
+                        </select>
+                        <button onclick="createPod()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg flex items-center space-x-2 transition">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Create Pod</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="pods-table" class="overflow-x-auto">
+                    <!-- Pods table will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Deployments Section -->
+        <div id="deployments-content" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="package" class="w-5 h-5 mr-2 text-green-400"></i>
+                        Deployments Management
+                    </h2>
+                    <button onclick="createDeployment()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg flex items-center space-x-2 transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Create Deployment</span>
+                    </button>
+                </div>
+                <div id="deployments-table" class="overflow-x-auto">
+                    <!-- Deployments table will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Section -->
+        <div id="services-content" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="network" class="w-5 h-5 mr-2 text-purple-400"></i>
+                        Services Management
+                    </h2>
+                    <button onclick="createService()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg flex items-center space-x-2 transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Create Service</span>
+                    </button>
+                </div>
+                <div id="services-table" class="overflow-x-auto">
+                    <!-- Services table will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Section -->
+        <div id="logs-content" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="file-text" class="w-5 h-5 mr-2 text-yellow-400"></i>
+                        Log Viewer
+                    </h2>
+                    <div class="flex space-x-2">
+                        <select id="log-pod-select" class="bg-gray-700 text-white px-3 py-2 rounded-lg">
+                            <option value="">Select Pod</option>
+                        </select>
+                        <button onclick="followLogs()" id="follow-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center space-x-2 transition">
+                            <i data-lucide="play" class="w-4 h-4"></i>
+                            <span>Follow</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="log-container" class="log-container rounded-lg p-4 h-96 overflow-y-auto">
+                    Select a pod to view logs...
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitoring Section -->
+        <div id="monitoring-content" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="activity" class="w-5 h-5 mr-2 text-red-400"></i>
+                    Cluster Monitoring
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Total Pods</p>
+                                <p id="total-pods" class="text-2xl font-bold text-white">0</p>
+                            </div>
+                            <i data-lucide="box" class="w-8 h-8 text-blue-400"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Running</p>
+                                <p id="running-pods" class="text-2xl font-bold text-green-400">0</p>
+                            </div>
+                            <i data-lucide="check-circle" class="w-8 h-8 text-green-400"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Pending</p>
+                                <p id="pending-pods" class="text-2xl font-bold text-yellow-400">0</p>
+                            </div>
+                            <i data-lucide="clock" class="w-8 h-8 text-yellow-400"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-400 text-sm">Failed</p>
+                                <p id="failed-pods" class="text-2xl font-bold text-red-400">0</p>
+                            </div>
+                            <i data-lucide="x-circle" class="w-8 h-8 text-red-400"></i>
+                        </div>
+                    </div>
+                </div>
+                <div id="resource-usage" class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-3">Resource Usage</h3>
+                    <div id="resource-charts">
+                        <!-- Resource charts will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Actions -->
+    <div id="action-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <h3 id="modal-title" class="text-lg font-semibold mb-4"></h3>
+            <div id="modal-content"></div>
+            <div class="flex justify-end space-x-2 mt-4">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition">Cancel</button>
+                <button id="modal-confirm" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
