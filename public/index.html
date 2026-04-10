@@ -218,6 +218,29 @@
         </div>
     </div>
 
+    <script>
+        // Inline test to verify JavaScript is working
+        console.log('HTML loaded successfully');
+        
+        // Test if createPod function exists after page load
+        window.testCreatePod = function() {
+            if (typeof createPod === 'function') {
+                console.log('SUCCESS: createPod function exists');
+                alert('SUCCESS: createPod function exists!');
+                return true;
+            } else {
+                console.log('ERROR: createPod function does NOT exist');
+                alert('ERROR: createPod function does NOT exist!');
+                return false;
+            }
+        };
+        
+        // Run test after 3 seconds
+        setTimeout(function() {
+            console.log('Running createPod test...');
+            window.testCreatePod();
+        }, 3000);
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
