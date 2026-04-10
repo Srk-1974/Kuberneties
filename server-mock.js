@@ -188,6 +188,56 @@ class MockKubernetesManager {
                 });
             });
 
+            socket.on('create-deployment', (data) => {
+                console.log(`Mock create deployment: ${data.name}`);
+                
+                // Create new deployment object
+                const newDeployment = {
+                    name: data.name,
+                    namespace: data.namespace || 'default',
+                    replicas: data.replicas || 3,
+                    readyReplicas: data.replicas || 3,
+                    updatedReplicas: data.replicas || 3,
+                    availableReplicas: data.replicas || 3,
+                    age: '0s',
+                    ready: `${data.replicas || 3}/${data.replicas || 3}`
+                };
+                
+                // Add to mock deployments array
+                this.mockDeployments.push(newDeployment);
+                
+                // Send updated deployments list
+                setTimeout(() => {
+                    socket.emit('deployments-update', this.mockDeployments);
+                }, 1500);
+            });
+
+            socket.on('create-service', (data) => {
+                console.log(`Mock create service: ${data.name}`);
+                
+                // Create new service object
+                const newService = {
+                    name: data.name,
+                    namespace: data.namespace || 'default',
+                    type: data.type || 'ClusterIP',
+                    clusterIP: '10.96.0.' + Math.floor(Math.random() * 255),
+                    externalIPs: data.type === 'LoadBalancer' ? ['192.168.1.' + Math.floor(Math.random() * 255)] : [],
+                    ports: [{
+                        port: data.port || 80,
+                        protocol: 'TCP'
+                    }],
+                    age: '0s'
+                };
+                
+                // Add to mock services array
+                this.mockServices.push(newService);
+                
+                // Send updated services list
+                setTimeout(() => {
+                    socket.emit('services-update', this.mockServices);
+                }, 1500);
+            });
+
             socket.on('get-cluster-stats', () => {
                 const stats = {
                     totalPods: this.mockPods.length,

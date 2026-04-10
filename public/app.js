@@ -557,13 +557,135 @@ function createPod() {
 }
 
 function createDeployment() {
-    // TODO: Implement deployment creation modal
-    alert('Deployment creation dialog would open here');
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Deployment Name</label>
+                <input type="text" id="deployment-name" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="my-deployment" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Container Image</label>
+                <input type="text" id="deployment-image" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="nginx:latest" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Namespace</label>
+                <select id="deployment-namespace" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="default">default</option>
+                    <option value="development">development</option>
+                    <option value="production">production</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Replicas</label>
+                <input type="number" id="deployment-replicas" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="3" value="3" min="1" max="10">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Port</label>
+                <input type="number" id="deployment-port" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="80" value="80">
+            </div>
+        </div>
+    `;
+    
+    k8sGUI.showModal('Create Deployment', modalContent);
+    
+    // Update modal confirm button
+    document.getElementById('modal-confirm').onclick = () => {
+        const deploymentName = document.getElementById('deployment-name').value;
+        const deploymentImage = document.getElementById('deployment-image').value;
+        const deploymentNamespace = document.getElementById('deployment-namespace').value;
+        const deploymentReplicas = document.getElementById('deployment-replicas').value;
+        const deploymentPort = document.getElementById('deployment-port').value;
+        
+        if (!deploymentName || !deploymentImage) {
+            k8sGUI.showError('Deployment name and image are required');
+            return;
+        }
+        
+        // Create deployment via socket
+        k8sGUI.socket.emit('create-deployment', {
+            name: deploymentName,
+            image: deploymentImage,
+            namespace: deploymentNamespace,
+            replicas: parseInt(deploymentReplicas) || 3,
+            port: parseInt(deploymentPort) || 80
+        });
+        
+        k8sGUI.showSuccess(`Creating deployment ${deploymentName}...`);
+        k8sGUI.closeModal();
+        
+        // Refresh deployments after a delay
+        setTimeout(() => {
+            k8sGUI.loadDeployments();
+        }, 2000);
+    };
 }
 
 function createService() {
-    // TODO: Implement service creation modal
-    alert('Service creation dialog would open here');
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Service Name</label>
+                <input type="text" id="service-name" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="my-service" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Namespace</label>
+                <select id="service-namespace" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="default">default</option>
+                    <option value="development">development</option>
+                    <option value="production">production</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Service Type</label>
+                <select id="service-type" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="ClusterIP">ClusterIP</option>
+                    <option value="NodePort">NodePort</option>
+                    <option value="LoadBalancer">LoadBalancer</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Target Port</label>
+                <input type="number" id="service-port" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="80" value="80">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Container Port</label>
+                <input type="number" id="service-target-port" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="80" value="80">
+            </div>
+        </div>
+    `;
+    
+    k8sGUI.showModal('Create Service', modalContent);
+    
+    // Update modal confirm button
+    document.getElementById('modal-confirm').onclick = () => {
+        const serviceName = document.getElementById('service-name').value;
+        const serviceNamespace = document.getElementById('service-namespace').value;
+        const serviceType = document.getElementById('service-type').value;
+        const servicePort = document.getElementById('service-port').value;
+        const serviceTargetPort = document.getElementById('service-target-port').value;
+        
+        if (!serviceName) {
+            k8sGUI.showError('Service name is required');
+            return;
+        }
+        
+        // Create service via socket
+        k8sGUI.socket.emit('create-service', {
+            name: serviceName,
+            namespace: serviceNamespace,
+            type: serviceType,
+            port: parseInt(servicePort) || 80,
+            targetPort: parseInt(serviceTargetPort) || 80
+        });
+        
+        k8sGUI.showSuccess(`Creating service ${serviceName}...`);
+        k8sGUI.closeModal();
+        
+        // Refresh services after a delay
+        setTimeout(() => {
+            k8sGUI.loadServices();
+        }, 2000);
+    };
 }
 
 function followLogs() {
