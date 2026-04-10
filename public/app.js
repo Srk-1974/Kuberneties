@@ -499,6 +499,7 @@ function refreshAll() {
 }
 
 function createPod() {
+    alert('DEBUG: createPod function called!');
     const modalContent = `
         <div class="space-y-4">
             <div class="mb-4">
