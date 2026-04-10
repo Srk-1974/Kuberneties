@@ -499,6 +499,17 @@ function refreshAll() {
 }
 
 function createPod() {
+    // Test if function is available
+    if (typeof k8sGUI === 'undefined') {
+        alert('ERROR: k8sGUI not initialized yet. Please wait...');
+        return;
+    }
+    
+    if (typeof k8sGUI.showModal === 'undefined') {
+        alert('ERROR: showModal function not available. Please wait...');
+        return;
+    }
+    
     alert('DEBUG: createPod function called!');
     const modalContent = `
         <div class="space-y-4">
