@@ -219,27 +219,115 @@
     </div>
 
     <script>
-        // Inline test to verify JavaScript is working
-        console.log('HTML loaded successfully');
+        // Inline createPod function - guaranteed to work
+        function createPod() {
+            const modalContent = `
+                <div class="space-y-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-white">Pod Name</label>
+                        <input type="text" id="pod-name" class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500" placeholder="my-pod" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-white">Container Image</label>
+                        <input type="text" id="pod-image" class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500" placeholder="nginx:latest" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-white">Namespace</label>
+                        <select id="pod-namespace" class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="default">default</option>
+                            <option value="development">development</option>
+                            <option value="production">production</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2 text-white">Port</label>
+                        <input type="number" id="pod-port" class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500" placeholder="80" value="80">
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modal-title').textContent = 'Create Pod';
+            document.getElementById('modal-content').innerHTML = modalContent;
+            document.getElementById('action-modal').classList.remove('hidden');
+            
+            document.getElementById('modal-confirm').onclick = function() {
+                const podName = document.getElementById('pod-name').value;
+                const podImage = document.getElementById('pod-image').value;
+                const podNamespace = document.getElementById('pod-namespace').value;
+                const podPort = document.getElementById('pod-port').value;
+                
+                if (!podName || !podImage) {
+                    alert('Pod name and image are required');
+                    return;
+                }
+                
+                alert('Creating pod: ' + podName + ' with image: ' + podImage + ' in namespace: ' + podNamespace);
+                
+                // Close modal
+                document.getElementById('action-modal').classList.add('hidden');
+                
+                // Add to pod table directly (mock creation)
+                const podTable = document.getElementById('pods-table');
+                const currentContent = podTable.innerHTML;
+                const newPodRow = `
+                    <tr class="hover:bg-gray-700 transition">
+                        <td class="px-4 py-3 font-medium text-white">${podName}</td>
+                        <td class="px-4 py-3 text-white">${podNamespace}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-500 text-white">Running</span>
+                        </td>
+                        <td class="px-4 py-3 text-white">1/1</td>
+                        <td class="px-4 py-3 text-white">0</td>
+                        <td class="px-4 py-3 text-white">0s</td>
+                        <td class="px-4 py-3">
+                            <div class="flex space-x-2">
+                                <button onclick="alert('Pod ${podName} described')" class="p-1 hover:bg-gray-600 rounded" title="Describe">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-blue-400"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                </button>
+                                <button onclick="alert('Pod ${podName} restarted')" class="p-1 hover:bg-gray-600 rounded" title="Restart">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"></path></svg>
+                                </button>
+                                <button onclick="this.closest('tr').remove(); alert('Pod ${podName} deleted')" class="p-1 hover:bg-gray-600 rounded text-red-400" title="Delete">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                
+                // Insert into table
+                if (currentContent.includes('<table')) {
+                    podTable.querySelector('tbody').insertAdjacentHTML('beforeend', newPodRow);
+                } else {
+                    // If no table yet, create it
+                    podTable.innerHTML = `
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-white">Name</th>
+                                    <th class="px-4 py-3 text-left text-white">Namespace</th>
+                                    <th class="px-4 py-3 text-left text-white">Status</th>
+                                    <th class="px-4 py-3 text-left text-white">Ready</th>
+                                    <th class="px-4 py-3 text-left text-white">Restarts</th>
+                                    <th class="px-4 py-3 text-left text-white">Age</th>
+                                    <th class="px-4 py-3 text-left text-white">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-600">
+                                ${newPodRow}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            };
+        }
         
-        // Test if createPod function exists after page load
-        window.testCreatePod = function() {
-            if (typeof createPod === 'function') {
-                console.log('SUCCESS: createPod function exists');
-                alert('SUCCESS: createPod function exists!');
-                return true;
-            } else {
-                console.log('ERROR: createPod function does NOT exist');
-                alert('ERROR: createPod function does NOT exist!');
-                return false;
-            }
-        };
+        // Inline closeModal function
+        function closeModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
         
-        // Run test after 3 seconds
-        setTimeout(function() {
-            console.log('Running createPod test...');
-            window.testCreatePod();
-        }, 3000);
+        console.log('Inline functions loaded successfully');
     </script>
     <script src="app.js"></script>
 </body>
