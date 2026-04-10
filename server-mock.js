@@ -146,6 +146,42 @@ class MockKubernetesManager {
                         clearInterval(logInterval);
                     }
                 }, 1000);
+            });
+
+            socket.on('create-pod', (data) => {
+                console.log(`Mock create pod: ${data.name}`);
+                
+                // Create new pod object
+                const newPod = {
+                    name: data.name,
+                    namespace: data.namespace || 'default',
+                    status: { phase: 'Running' },
+                    ready: '1/1',
+                    restartCount: 0,
+                    age: '0s',
+                    node: 'minikube',
+                    ip: '172.17.0.' + Math.floor(Math.random() * 255)
+                };
+                
+                // Add to mock pods array
+                this.mockPods.push(newPod);
+                
+                // Send updated pods list
+                setTimeout(() => {
+                    socket.emit('pods-update', this.mockPods);
+                }, 1500);
+                
+                // Also update cluster stats
+                setTimeout(() => {
+                    const stats = {
+                        totalPods: this.mockPods.length,
+                        runningPods: this.mockPods.filter(p => p.status?.phase === 'Running').length,
+                        pendingPods: this.mockPods.filter(p => p.status?.phase === 'Pending').length,
+                        failedPods: this.mockPods.filter(p => ['Failed', 'CrashLoopBackOff'].includes(p.status?.phase)).length
+                    };
+                    socket.emit('cluster-stats', stats);
+                }, 2000);
+            });
 
                 socket.on('disconnect', () => {
                     clearInterval(logInterval);

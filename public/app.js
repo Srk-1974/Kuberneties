@@ -499,8 +499,61 @@ function refreshAll() {
 }
 
 function createPod() {
-    // TODO: Implement pod creation modal
-    alert('Pod creation dialog would open here');
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Pod Name</label>
+                <input type="text" id="pod-name" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="my-pod" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Container Image</label>
+                <input type="text" id="pod-image" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="nginx:latest" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Namespace</label>
+                <select id="pod-namespace" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="default">default</option>
+                    <option value="development">development</option>
+                    <option value="production">production</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Port</label>
+                <input type="number" id="pod-port" class="w-full px-3 py-2 bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="80" value="80">
+            </div>
+        </div>
+    `;
+    
+    k8sGUI.showModal('Create Pod', modalContent);
+    
+    // Update modal confirm button
+    document.getElementById('modal-confirm').onclick = () => {
+        const podName = document.getElementById('pod-name').value;
+        const podImage = document.getElementById('pod-image').value;
+        const podNamespace = document.getElementById('pod-namespace').value;
+        const podPort = document.getElementById('pod-port').value;
+        
+        if (!podName || !podImage) {
+            k8sGUI.showError('Pod name and image are required');
+            return;
+        }
+        
+        // Create pod via socket (works with both mock and real backend)
+        k8sGUI.socket.emit('create-pod', {
+            name: podName,
+            image: podImage,
+            namespace: podNamespace,
+            port: parseInt(podPort) || 80
+        });
+        
+        k8sGUI.showSuccess(`Creating pod ${podName}...`);
+        k8sGUI.closeModal();
+        
+        // Refresh pods after a delay
+        setTimeout(() => {
+            k8sGUI.loadPods();
+        }, 2000);
+    };
 }
 
 function createDeployment() {
